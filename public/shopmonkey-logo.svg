@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0052CC;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Hexagon shape -->
+  <path fill="url(#blueGradient)" d="M256 50L450 150L450 350L256 450L62 350L62 150Z"/>
+  <!-- Monkey face (white) -->
+  <path fill="white" d="M256 120L390 180L390 320L256 380L122 320L122 180Z"/>
+  <!-- Left ear -->
+  <rect x="90" y="200" width="40" height="80" rx="20" fill="url(#blueGradient)"/>
+  <!-- Right ear -->
+  <rect x="382" y="200" width="40" height="80" rx="20" fill="url(#blueGradient)"/>
+  <!-- Hair spikes -->
+  <path fill="url(#blueGradient)" d="M180 130L200 170L220 130Z"/>
+  <path fill="url(#blueGradient)" d="M240 110L256 160L272 110Z"/>
+  <path fill="url(#blueGradient)" d="M292 130L312 170L332 130Z"/>
+  <!-- Left eye -->
+  <circle cx="210" cy="240" r="18" fill="url(#blueGradient)"/>
+  <!-- Right eye -->
+  <circle cx="302" cy="240" r="18" fill="url(#blueGradient)"/>
+  <!-- Smile -->
+  <path fill="none" stroke="url(#blueGradient)" stroke-width="12" stroke-linecap="round" d="M200 300Q256 340 312 300"/>
+</svg>

@@ -1,0 +1,307 @@
+// Shopmonkey Clone - Auto Repair Shop Management System
+// Complete schema with all entities for managing customers, vehicles, work orders, and more
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  SERVICE_ADVISOR
+  TECHNICIAN
+}
+
+enum WorkOrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EstimateStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  CARD
+  FINANCING
+}
+
+// Core Models
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  password      String
+  role          UserRole       @default(SERVICE_ADVISOR)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  workOrdersAssigned WorkOrder[] @relation("AssignedTechnician")
+  workOrdersCreated  WorkOrder[] @relation("CreatedBy")
+  estimates          Estimate[]
+  invoices           Invoice[]
+  
+  @@index([email])
+}
+
+model Customer {
+  id            String      @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String
+  address       String?
+  city          String?
+  state         String?
+  zipCode       String?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  vehicles      Vehicle[]
+  workOrders    WorkOrder[]
+  estimates     Estimate[]
+  invoices      Invoice[]
+  
+  @@index([phone])
+  @@index([email])
+}
+
+model Vehicle {
+  id            String      @id @default(cuid())
+  customerId    String
+  vin           String?     @unique
+  year          Int
+  make          String
+  model         String
+  color         String?
+  licensePlate  String?
+  mileage       Int?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  customer      Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  workOrders    WorkOrder[]
+  
+  @@index([customerId])
+  @@index([vin])
+}
+
+model Service {
+  id            String                @id @default(cuid())
+  name          String
+  description   String?
+  defaultPrice  Float
+  laborHours    Float                 @default(1)
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  
+  // Relations
+  workOrderServices     WorkOrderService[]
+  estimateServices      EstimateService[]
+  
+  @@index([name])
+}
+
+model Part {
+  id            String          @id @default(cuid())
+  name          String
+  partNumber    String?         @unique
+  description   String?
+  price         Float
+  cost          Float?
+  quantityInStock Int           @default(0)
+  minStockLevel   Int           @default(0)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relations
+  workOrderParts    WorkOrderPart[]
+  estimateParts     EstimatePart[]
+  
+  @@index([partNumber])
+  @@index([name])
+}
+
+model WorkOrder {
+  id              String            @id @default(cuid())
+  workOrderNumber String            @unique
+  customerId      String
+  vehicleId       String
+  assignedToId    String?
+  createdById     String
+  status          WorkOrderStatus   @default(PENDING)
+  description     String?
+  customerNotes   String?
+  internalNotes   String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relations
+  customer        Customer          @relation(fields: [customerId], references: [id])
+  vehicle         Vehicle           @relation(fields: [vehicleId], references: [id])
+  assignedTo      User?             @relation("AssignedTechnician", fields: [assignedToId], references: [id])
+  createdBy       User              @relation("CreatedBy", fields: [createdById], references: [id])
+  services        WorkOrderService[]
+  parts           WorkOrderPart[]
+  estimate        Estimate?
+  invoice         Invoice?
+  
+  @@index([workOrderNumber])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+model WorkOrderService {
+  id            String      @id @default(cuid())
+  workOrderId   String
+  serviceId     String
+  quantity      Int         @default(1)
+  price         Float
+  laborHours    Float
+  notes         String?
+  createdAt     DateTime    @default(now())
+  
+  // Relations
+  workOrder     WorkOrder   @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  service       Service     @relation(fields: [serviceId], references: [id])
+  
+  @@index([workOrderId])
+  @@index([serviceId])
+}
+
+model WorkOrderPart {
+  id            String      @id @default(cuid())
+  workOrderId   String
+  partId        String
+  quantity      Int         @default(1)
+  price         Float
+  notes         String?
+  createdAt     DateTime    @default(now())
+  
+  // Relations
+  workOrder     WorkOrder   @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  part          Part        @relation(fields: [partId], references: [id])
+  
+  @@index([workOrderId])
+  @@index([partId])
+}
+
+model Estimate {
+  id              String            @id @default(cuid())
+  estimateNumber  String            @unique
+  customerId      String
+  workOrderId     String?           @unique
+  createdById     String
+  status          EstimateStatus    @default(DRAFT)
+  description     String?
+  notes           String?
+  subtotal        Float             @default(0)
+  tax             Float             @default(0)
+  total           Float             @default(0)
+  validUntil      DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  // Relations
+  customer        Customer          @relation(fields: [customerId], references: [id])
+  workOrder       WorkOrder?        @relation(fields: [workOrderId], references: [id])
+  createdBy       User              @relation(fields: [createdById], references: [id])
+  services        EstimateService[]
+  parts           EstimatePart[]
+  
+  @@index([estimateNumber])
+  @@index([customerId])
+  @@index([status])
+}
+
+model EstimateService {
+  id            String      @id @default(cuid())
+  estimateId    String
+  serviceId     String
+  quantity      Int         @default(1)
+  price         Float
+  laborHours    Float
+  notes         String?
+  createdAt     DateTime    @default(now())
+  
+  // Relations
+  estimate      Estimate    @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  service       Service     @relation(fields: [serviceId], references: [id])
+  
+  @@index([estimateId])
+  @@index([serviceId])
+}
+
+model EstimatePart {
+  id            String      @id @default(cuid())
+  estimateId    String
+  partId        String
+  quantity      Int         @default(1)
+  price         Float
+  notes         String?
+  createdAt     DateTime    @default(now())
+  
+  // Relations
+  estimate      Estimate    @relation(fields: [estimateId], references: [id], onDelete: Cascade)
+  part          Part        @relation(fields: [partId], references: [id])
+  
+  @@index([estimateId])
+  @@index([partId])
+}
+
+model Invoice {
+  id              String          @id @default(cuid())
+  invoiceNumber   String          @unique
+  customerId      String
+  workOrderId     String?         @unique
+  createdById     String
+  status          InvoiceStatus   @default(UNPAID)
+  subtotal        Float           @default(0)
+  tax             Float           @default(0)
+  total           Float           @default(0)
+  amountPaid      Float           @default(0)
+  paymentMethod   PaymentMethod?
+  notes           String?
+  dueDate         DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  workOrder       WorkOrder?      @relation(fields: [workOrderId], references: [id])
+  createdBy       User            @relation(fields: [createdById], references: [id])
+  
+  @@index([invoiceNumber])
+  @@index([customerId])
+  @@index([status])
+}
